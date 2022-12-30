@@ -25,13 +25,15 @@
   * We haven't understand the logic to use keyboard API from tinyusb, we didn't find the release keycode method before project deadline. 
 ---
 ## II - Mouse Functions
-### 3.1 Data filter
+The code flow chart is shown below. It is mainly about mouse function.
+<p><div align="center"><img src="./media/flowchart.jpeg" alt="Data_Type_Issue" width="500"/></div></p>
+### 2.1 Data filter
 The raw data accessed from the IMU sensor contained extensive noise, which complicated the problem. Therefore, to acqurie a clean data, we needed to apply a filter to smooth the raw data. We compared slide window filter and Kalman filter and decided to use slide window because of the adaptabiltiy and simple execution. It mainly averaged the past data in a fixed window size plus the current data. By adjusting the windows size, we can acquire data in different smooth level. A slide window example is displayed below, effects can be easily observed. 
 
 <img src="./media/slide_window.png" alt="Data_Type_Issue" width="300"/>
 
 
-### 3.2 Cursor Position Computation 
+### 2.2 Cursor Position Computation 
 The cursor position is determined by palm direction, instead of palm position. Because position requires integrate the accelerometer data twice, and any small error will accumulate into a large error, which lead to a inaccurate and unstable result. Instead, we use the accelerometer to estimate the gravity direction and obtain a more accurate angle estimation. The gravity is calculated by the mean of a few acceleration(force) data before, the current angle to x,y axis is acquired by "atan" function. Finally, the angles will map to position linearly.
 
 Here is the how it works. When your hand is place horizontally, the cursor is stay in the middle of the screen; if your palm is facing up tp the left, the cursor will move to top left of the screen accordingly. To improve user experience, we add a touch switch on finger: if you need to move the cursor, just touching your thumb and forefinger. Otherwise, you can move your hand without worrying affect thr cursor.
