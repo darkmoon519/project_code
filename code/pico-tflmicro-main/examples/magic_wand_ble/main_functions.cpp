@@ -56,7 +56,7 @@ limitations under the License.
 #define UART1_RX_PIN 5
 #define ADDR_PIN1 26
 #define ADDR_PIN2 27
-#define CLICK_THRES 1.0
+#define CLICK_THRES 2.0
 namespace {
 bool     linked     = false;
 bool     first      = true;
@@ -386,7 +386,7 @@ void setup() {
 //   hid_task();
 // }
 
-void mouse_abs_position(){ // input is the cursor position
+void mouse_abs_position(bool initial_cursor_flag){ // input is the cursor position
   // int accelerometer_samples_read;
   // int gyroscope_samples_read;
   
@@ -433,12 +433,26 @@ void mouse_abs_position(){ // input is the cursor position
     
     // UpdateVelocity(accelerometer_samples_read, gravity_now);
   }
-  calculate_movement(mouse_angle_xz, mouse_angle_yz, mouse_movement, hid_sent_flag);
-  // tud_task(); // already in the main loop
-  get_data(mouse_movement);
-  hid_task(hid_sent_flag, 0); // make sure hid run the movement command
+  if (initial_cursor_flag){
+    initialize_cursor_position(mouse_angle_xz, mouse_angle_yz);
+  }
+  else{
+    calculate_movement(mouse_angle_xz, mouse_angle_yz, mouse_movement, hid_sent_flag);
+    // char temp1[20];
+    // sprintf(temp1, "\n%d  %d \r\n", mouse_movement[0], mouse_movement[1]);
+    // uart_puts(uart0, temp1);
+    tud_task(); 
+    get_data(mouse_movement);
+    hid_task(hid_sent_flag, 0); // make sure hid run the movement command
+  }
 }
 
+void read_redundant_data(){ // input is the cursor position
+  int accelerometer_samples_read;
+  int gyroscope_samples_read; 
+  ReadAccelerometerAndGyroscope(&accelerometer_samples_read, &gyroscope_samples_read);  
+
+}
 
 // void finger_loop(){
 //   int imu_accel_[WINDOW_LENGTH*3];
@@ -621,7 +635,7 @@ void loop() {
   }
 }
 
-void click_detect(){
+bool click_detect(){
   float right_acc[3], right_gyro[3];
   float left_acc[3], left_gyro[3];
   float palm_acc[3], palm_gyro[3];
@@ -632,14 +646,21 @@ void click_detect(){
   float v_left = VectorMagnitude(left_acc);
   float v_palm = VectorMagnitude(palm_acc);
   bool temp_flag;
+  // for button value refer to:
+  // https://eleccelerator.com/tutorial-about-usb-hid-report-descriptors/
   if(v_right - v_palm > CLICK_THRES){
-    hid_task(temp_flag, 2);
-    uart_puts(uart0, "Right click");
+    tud_task(); 
+    hid_task(temp_flag, 0x01);
+    uart_puts(uart0, "Right click\r\n");
+    return true;
   }
   if(v_left - v_palm > CLICK_THRES){
-    hid_task(temp_flag, 1);
-    uart_puts(uart0, "Left click");
+    tud_task(); 
+    hid_task(temp_flag, 0x04);
+    uart_puts(uart0, "Left click\r\n");
+    return true;
   }
+  return false;
   // char str[40] ;
   // sprintf(str," %f  %f  %f\r\n", v_right, v_left, v_palm);
   // uart_puts(uart0, str);

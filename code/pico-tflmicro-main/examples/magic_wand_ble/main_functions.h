@@ -16,7 +16,7 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_MICRO_EXAMPLES_MAGIC_WAND_MAIN_FUNCTIONS_H_
 #define TENSORFLOW_LITE_MICRO_EXAMPLES_MAGIC_WAND_MAIN_FUNCTIONS_H_
 #include "pico/stdlib.h"
-#define KEYBOARD_SWITCH_IO 15   
+#define KEYBOARD_SWITCH_IO 28 // don't use pin4, it's for IMU on board   
 //// Expose a C friendly interface for main functions.
 //#ifdef __cplusplus
 // extern "C" {
@@ -30,13 +30,13 @@ void setup();
 // repeatedly from the application code. The name needs to be loop() for Arduino
 // compatibility.
 void loop();
-void mouse_rel_movement();
-void mouse_abs_position();
+void read_redundant_data();
+void mouse_abs_position(bool initial_cursor_flag);
 void imu_print();
 void screen_show();
 void IMUupdate();
 void keyboard_loop(char&);
-void click_detect();
+bool click_detect();
 //#ifdef __cplusplus
 //}
 //#endif

@@ -1,62 +1,75 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+/* 2022 Fall ESE519
+Authors: Rongqian Chen, Junpeng Zhao, Qi Xue
 ==============================================================================*/
+
 #include "main_functions.h"
 #include "tusb_hid/hid_src.h"
 #include "pico/stdlib.h"
-// This is the default main used on systems that have the standard C entry
-// point. Other devices (for example FreeRTOS or ESP32) that have different
-// requirements for entry code (like an app_main function) should specialize
-// this main.cc file in a target-specific subfolder.
+
 enum TASKS{
   KEYBOARD=0,
   MOUSE
 };
 int main(int argc, char *argv[]) {
   setup();
-  bool state=0;
-  const uint32_t interval_ms = 1000;
-  static uint32_t start_ms = 0;
+  bool mode=0;
+  bool click_flag = false; // avoid repeat detection
+  // static bool mouse_drag_flag = false; // long press: dragging the mouse, short press: switch mode
+  static uint32_t button_start_ms = 0;
+  static uint32_t click_start_ms = 0;
+
   while (true) {
-     tud_task();
-    bool cur_switch=gpio_get(KEYBOARD_SWITCH_IO);
-    if(cur_switch == false){  // btn pressed     
-      if ( board_millis() - start_ms > interval_ms) { // avoid repeat detection
-        sleep_ms(20);
-        cur_switch=gpio_get(KEYBOARD_SWITCH_IO);
-        if(cur_switch == false){
-          state=!state;
-          start_ms = board_millis();
-          char str[50] ="switch\r\n";
-          uart_puts(uart0, str);
+    tud_task(); 
+    if(mode == MOUSE){
+      if (click_flag == false){
+        if(click_detect()){ // a click detected
+          click_start_ms = board_millis();
+          click_flag = true;
+        }
+      }
+      if (board_millis() - click_start_ms > 1000){// mouse click interval time is 1000ms
+        click_flag = false;
+      }           
+      mouse_abs_position(1); // initial_cursor_flag = 1, read the adundant data which IMU continue generating
+
+      if (gpio_get(KEYBOARD_SWITCH_IO) == false){  // detected a signal 
+        if ( board_millis() - button_start_ms > 500) { // avoid repeat detection
+          sleep_ms(20); // avoid the error caused by vibration
+          if (gpio_get(KEYBOARD_SWITCH_IO) == false){ // button pressed
+            button_start_ms = board_millis();   
+            while(true){
+              mouse_abs_position(0); //  remember to add tud_task because this is a while loop
+              if (gpio_get(KEYBOARD_SWITCH_IO) == true){
+                if ( board_millis() - button_start_ms < 700){ // button is released and the press time is short
+                mode = KEYBOARD;
+                uart_puts(uart0, "switch to Keyboard mode\r\n");
+                }
+                break;
+              }
+            }
+          }
         }
       }
     }
-      if(state==MOUSE){
-          mouse_abs_position(); 
-          click_detect();
+    else // keyboard mode
+    {       
+      char key =0;
+      keyboard_loop(key);
+      if(key!=0){
+      char str[50];
+      sprintf(str, "Key=%c\r\n",key);
+      uart_puts(uart0, str);
+    }
+      if (gpio_get(KEYBOARD_SWITCH_IO) == false){  // detected a signal     
+        if ( board_millis() - button_start_ms > 500) { // avoid repeat detection
+          sleep_ms(20); // avoid the error caused by vibration
+          if (gpio_get(KEYBOARD_SWITCH_IO) == false){ // button pressed
+            button_start_ms = board_millis();
+            mode = MOUSE;
+            uart_puts(uart0, "switch to Mouse mode\r\n");
+          }
+        }
       }
-      else
-      {        
-        char key =0;
-         keyboard_loop(key);
-         if(key!=0){
-          char str[50];
-          sprintf(str, "Key=%c\r\n",key);
-          uart_puts(uart0, str);
-         }
-      }
-
+    }
   }
 }

@@ -6,9 +6,11 @@
 #define SCREEN_WIDTH 3000
 #define ANGLEX_LIMIT 100.0
 #define ANGLEY_LIMIT 100.0
+// #define KEYBOARD_SWITCH_IO 28 // don't use pin4, it's for IMU on board 
 
 #include "ICM20948.h"
 #include <ICM42622.h>
+#include "main_functions.h"
 
 uint8_t DeviceWho = 0;
 
@@ -32,8 +34,9 @@ static float vy_window[WINDOW_LENGTH] =  { 0.0f};
 static float vz_window[WINDOW_LENGTH] =  { 0.0f};
 
 // Mouse parameters
-static int16_t mouse_position[2] = {0,0}; //cursor absolute position
-static int8_t mouse_movement[2] = {0,0}; //cursor relative movement
+int16_t mouse_position[2] = {0,0}; //cursor absolute position
+int8_t mouse_movement[2] = {0,0}; //cursor relative movement
+int16_t goal_position[2] = {0};
 float angle_xz, angle_yz ;
 
 static int32_t  stroke_length                                  = 0;
@@ -376,28 +379,28 @@ float sliding_window_filtering(float *window, float new_value){
 }
 
 // output: relative movement to goal position on the screen
-void calculate_movement(){
-  int16_t goal_position[2] = {0};
-  if (angle_xz < -ANGLEX_LIMIT) angle_xz = -ANGLEX_LIMIT;
-  if (angle_xz > ANGLEX_LIMIT) angle_xz = ANGLEX_LIMIT;
-  if (angle_yz < -ANGLEY_LIMIT) angle_yz = -ANGLEY_LIMIT;
-  if (angle_yz > ANGLEY_LIMIT) angle_yz = ANGLEY_LIMIT;
-  goal_position[0] = int16_t(angle_xz * SCREEN_LENGTH / (2*ANGLEX_LIMIT));
-  goal_position[1] = int16_t(angle_yz * SCREEN_WIDTH / (2*ANGLEY_LIMIT));
-  mouse_movement[0] = int8_t(goal_position[0] - mouse_position[0]);
-  mouse_movement[1] = int8_t(goal_position[1] - mouse_position[1]);
-  if (mouse_movement[0] > MAX_CURSOR_SPEED) mouse_movement[0] = MAX_CURSOR_SPEED;
-  if (mouse_movement[0] < -MAX_CURSOR_SPEED) mouse_movement[0] = -MAX_CURSOR_SPEED;
-  if (mouse_movement[1] > MAX_CURSOR_SPEED) mouse_movement[1] = MAX_CURSOR_SPEED;
-  if (mouse_movement[1] < -MAX_CURSOR_SPEED) mouse_movement[1] = -MAX_CURSOR_SPEED;
-  if (hid_sent_flag == true){
-  mouse_position[0] = mouse_position[0] + int16_t(mouse_movement[0]);
-  mouse_position[1] = mouse_position[1] + int16_t(mouse_movement[1]);  
-  }
-  char temp1[20];
-  sprintf(temp1, "\n%d  %d  %d \r\n", mouse_position[0], goal_position[0], mouse_movement[0]);
-  // uart_puts(uart0, temp1);
-}
+// void calculate_movement(){
+//   int16_t goal_position[2] = {0};
+//   if (angle_xz < -ANGLEX_LIMIT) angle_xz = -ANGLEX_LIMIT;
+//   if (angle_xz > ANGLEX_LIMIT) angle_xz = ANGLEX_LIMIT;
+//   if (angle_yz < -ANGLEY_LIMIT) angle_yz = -ANGLEY_LIMIT;
+//   if (angle_yz > ANGLEY_LIMIT) angle_yz = ANGLEY_LIMIT;
+//   goal_position[0] = int16_t(angle_xz * SCREEN_LENGTH / (2*ANGLEX_LIMIT));
+//   goal_position[1] = int16_t(angle_yz * SCREEN_WIDTH / (2*ANGLEY_LIMIT));
+//   mouse_movement[0] = int8_t(goal_position[0] - mouse_position[0]);
+//   mouse_movement[1] = int8_t(goal_position[1] - mouse_position[1]);
+//   if (mouse_movement[0] > MAX_CURSOR_SPEED) mouse_movement[0] = MAX_CURSOR_SPEED;
+//   if (mouse_movement[0] < -MAX_CURSOR_SPEED) mouse_movement[0] = -MAX_CURSOR_SPEED;
+//   if (mouse_movement[1] > MAX_CURSOR_SPEED) mouse_movement[1] = MAX_CURSOR_SPEED;
+//   if (mouse_movement[1] < -MAX_CURSOR_SPEED) mouse_movement[1] = -MAX_CURSOR_SPEED;
+//   if (hid_sent_flag == true){
+//   mouse_position[0] = mouse_position[0] + int16_t(mouse_movement[0]);
+//   mouse_position[1] = mouse_position[1] + int16_t(mouse_movement[1]);  
+//   }
+//   char temp1[20];
+//   sprintf(temp1, "\n%d  %d  %d \r\n", mouse_position[0], goal_position[0], mouse_movement[0]);
+//   // uart_puts(uart0, temp1);
+// }
 
 // let |velocity|<=1
 void velocity_normalization(){
@@ -827,17 +830,17 @@ void EstimateGrvtyDir(float* accel_data ,int accel_data_i, int accel_data_l ,
 
 // output: relative movement to goal position on the screen
 void calculate_movement(float _angle_xz,float _angle_yz,int8_t* _mouse_movement,bool hid_sent_flag){
-  static int16_t mouse_position[2] = {0,0}; //cursor absolute position
-
-  int16_t goal_position[2] = {0};
+  
   if (_angle_xz < -ANGLEX_LIMIT) _angle_xz = -ANGLEX_LIMIT;
   if (_angle_xz > ANGLEX_LIMIT) _angle_xz = ANGLEX_LIMIT;
   if (_angle_yz < -ANGLEY_LIMIT) _angle_yz = -ANGLEY_LIMIT;
   if (_angle_yz > ANGLEY_LIMIT) _angle_yz = ANGLEY_LIMIT;
   goal_position[0] = int16_t(_angle_xz * SCREEN_LENGTH / (2*ANGLEX_LIMIT));
   goal_position[1] = int16_t(_angle_yz * SCREEN_WIDTH / (2*ANGLEY_LIMIT));
+if (gpio_get(KEYBOARD_SWITCH_IO) == false){
   _mouse_movement[0] = int8_t(goal_position[0] - mouse_position[0]);
   _mouse_movement[1] = int8_t(goal_position[1] - mouse_position[1]);
+}
   if (_mouse_movement[0] > MAX_CURSOR_SPEED) _mouse_movement[0] = MAX_CURSOR_SPEED;
   if (_mouse_movement[0] < -MAX_CURSOR_SPEED) _mouse_movement[0] = -MAX_CURSOR_SPEED;
   if (_mouse_movement[1] > MAX_CURSOR_SPEED) _mouse_movement[1] = MAX_CURSOR_SPEED;
@@ -846,10 +849,15 @@ void calculate_movement(float _angle_xz,float _angle_yz,int8_t* _mouse_movement,
   mouse_position[0] = mouse_position[0] + int16_t(_mouse_movement[0]);
   mouse_position[1] = mouse_position[1] + int16_t(_mouse_movement[1]);  
   }
-  char temp1[20];
-  sprintf(temp1, "\n%d  %d  %d \r\n", mouse_position[0], goal_position[0], _mouse_movement[0]);
+  // char temp1[20];
+  // sprintf(temp1, "\n%d  %d  %d \r\n", mouse_position[0], goal_position[0], _mouse_movement[0]);
   // uart_puts(uart0, temp1);
 }
 
+void initialize_cursor_position(float _angle_xz,float _angle_yz)
+{
+  mouse_position[0] = int16_t(_angle_xz * SCREEN_LENGTH / (2*ANGLEX_LIMIT));
+  mouse_position[1] = int16_t(_angle_yz * SCREEN_LENGTH / (2*ANGLEX_LIMIT));
+}
 
 #endif  // MAGIC_WAND_IMU_PROVIDER_H
