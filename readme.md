@@ -4,8 +4,8 @@
 </div>
 ## I - Overview
 ### 1.1 What is it?
-* We designed a mouse-keyboard system which have the curser moving, right clicking, left clicking, and gesture writing functions.
-* User can achive the curser function by rotating hand and can achived the clicking function by shaking fingers in the air. The keyboard function is under implementation.
+* We designed a mouse-keyboard system which have the cursor moving, right clicking, left clicking, and gesture writing functions.
+* User can achive the cursor function by rotating hand and can achived the clicking function by shaking fingers in the air. The keyboard function is under implementation.
 
 ### 1.2 How to use it?
 * **Cursor Movement:** There're two metal panels on these two rings. When you want to move the cursor, just hold these two fingers and let metal contact. The movment direction follows the direction of your palm. Relase fingers can stop moving cursor.
@@ -27,6 +27,7 @@
 ## II - Mouse Functions
 The code flow chart is shown below. It is mainly about mouse function.
 <p><div align="center"><img src="./media/flowchart.jpeg" alt="Data_Type_Issue" width="500"/></div></p>
+
 ### 2.1 Data filter
 The raw data accessed from the IMU sensor contained extensive noise, which complicated the problem. Therefore, to acqurie a clean data, we needed to apply a filter to smooth the raw data. We compared slide window filter and Kalman filter and decided to use slide window because of the adaptabiltiy and simple execution. It mainly averaged the past data in a fixed window size plus the current data. By adjusting the windows size, we can acquire data in different smooth level. A slide window example is displayed below, effects can be easily observed. 
 
@@ -79,7 +80,7 @@ PIO is a good tool to work as a flexiable commmunication port such as UART, IIC 
 
 |Member|Github Account|Contribution|
 |:--|:--|:--|
-|Rongqian Chen|@WillChan9|Implemented curser moving, mouse left clicking, mouse right clicking functions.
+|Rongqian Chen|@WillChan9|Implemented IMU data processing, mouse cursor movement computation and HID functions. 
 |Qi Xue|@sueqixue|Collected data for gesture recognization model, building the model from scartch (including the data processing, model structure tuning, and model training), and implemented model deploying function which connected the gesture recogniztion model with the system.
 |Junpeng Zhao|@PZZ97|Investigate tinyusb API, IMU data flitering algorithm, reconstruct code body to adapt to multifunctions, PIO application.
 
