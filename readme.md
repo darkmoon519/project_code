@@ -1,7 +1,7 @@
 # ESE 5060 Final Project (Team Dark Moon): A Mouse-keyboard System Embedded on A Glove
-<div align="center">
+
 <img src="./media/mouse_keyboard_glove.jpg" alt="Glove" width="300"/>
-</div>
+
 ## I - Overview
 ### 1.1 What is it?
 * We designed a mouse-keyboard system which have the cursor moving, right clicking, left clicking, and gesture writing functions.
@@ -25,16 +25,13 @@
   * We haven't understand the logic to use keyboard API from tinyusb, we didn't find the release keycode method before project deadline. 
 ---
 ## II - Mouse Functions
-The code flow chart is shown below. It is mainly about mouse function.
-<p><div align="center"><img src="./media/flowchart.jpeg" alt="Data_Type_Issue" width="500"/></div></p>
-
 ### 2.1 Data filter
 The raw data accessed from the IMU sensor contained extensive noise, which complicated the problem. Therefore, to acqurie a clean data, we needed to apply a filter to smooth the raw data. We compared slide window filter and Kalman filter and decided to use slide window because of the adaptabiltiy and simple execution. It mainly averaged the past data in a fixed window size plus the current data. By adjusting the windows size, we can acquire data in different smooth level. A slide window example is displayed below, effects can be easily observed. 
 
 <img src="./media/slide_window.png" alt="Data_Type_Issue" width="300"/>
 
 
-### 2.2 Cursor Position Computation 
+### 2.2 Cursor Position Computation
 The cursor position is determined by palm direction, instead of palm position. Because position requires integrate the accelerometer data twice, and any small error will accumulate into a large error, which lead to a inaccurate and unstable result. Instead, we use the accelerometer to estimate the gravity direction and obtain a more accurate angle estimation. The gravity is calculated by the mean of a few acceleration(force) data before, the current angle to x,y axis is acquired by "atan" function. Finally, the angles will map to position linearly.
 
 Here is the how it works. When your hand is place horizontally, the cursor is stay in the middle of the screen; if your palm is facing up tp the left, the cursor will move to top left of the screen accordingly. To improve user experience, we add a touch switch on finger: if you need to move the cursor, just touching your thumb and forefinger. Otherwise, you can move your hand without worrying affect thr cursor.
@@ -50,7 +47,7 @@ Colab version of the training part: https://colab.research.google.com/drive/1JqM
 
 The accuracy of our model after 50 epochs of training:
 
-<img src="./media/images/keyboard_model_acc_epochs_50.jpg" alt="Accuracy" width="300"/>
+<img src="./train/images/keyboard_model_acc_epochs_50.jpg" alt="Accuracy" width="300"/>
 
 ### 3.3 Issues
 We cannot find how the author, ArduCAM, of the [magic_wand_ble project](https://github.com/ArduCAM/pico-tflmicro/tree/main/examples/magic_wand_ble) train the original model. Thus, we built a classification network from scratch, referencing the network structure of [magic_wand project](https://github.com/tensorflow/tflite-micro/tree/main/tensorflow/lite/micro/examples/magic_wand) of tflit.
@@ -61,12 +58,12 @@ We encountered a warning stating `WARNING:absl:Found untraced functions such as 
 #### 3.3.2 Data Type Issue
 In the magic_wand_ble code, it requires the type of the model input to be `kTfLiteInt8 = 9`. We specified the data type of our dataset as `int8` when we converted data to tensor `tf.convert_to_tensor(this_data_batch, dtype=tf.int8)`. However, we load the pre-trained model to the magic_wand_ble system, it shows that the model input data type is still `kTfLiteFloat32 = 1`. We do not know how to solve this yet.
 
-<img src="./media/images/data_type_issue.png" alt="Data_Type_Issue" width="600"/>
+<img src="./train/images/data_type_issue.png" alt="Data_Type_Issue" width="600"/>
 
 #### 3.3.3 Model Size Issue
 The new model is about twice as big as the original model (original model: around 20000 parameters; our model: around 50000 parameters). Our system will out of memory after several times of writing.
 
-<img src="./media/images/out_of_memory_issue.png" alt="Memory_Issue" width="600"/>
+<img src="./train/images/out_of_memory_issue.png" alt="Memory_Issue" width="600"/>
 
 ---
 
@@ -80,7 +77,7 @@ PIO is a good tool to work as a flexiable commmunication port such as UART, IIC 
 
 |Member|Github Account|Contribution|
 |:--|:--|:--|
-|Rongqian Chen|@WillChan9|Implemented IMU data processing, mouse cursor movement computation and HID functions. 
+|Rongqian Chen|@WillChan9|Implemented IMU data processing, mouse cursor movement computation and HID functions.
 |Qi Xue|@sueqixue|Collected data for gesture recognization model, building the model from scartch (including the data processing, model structure tuning, and model training), and implemented model deploying function which connected the gesture recogniztion model with the system.
 |Junpeng Zhao|@PZZ97|Investigate tinyusb API, IMU data flitering algorithm, reconstruct code body to adapt to multifunctions, PIO application.
 
